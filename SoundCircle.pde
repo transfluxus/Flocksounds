@@ -1,5 +1,3 @@
-//float[] tones = {130.813f,164.814f,195.998f,261.626f,329.628f,391.995f};
-//import ddf.minim.effects.*;
 
 class SoundCircle {
 
@@ -11,7 +9,8 @@ class SoundCircle {
   float amp =0;
 
   Oscil       wave;
-  int tone;
+
+  int tone, oct;
 
   int simpleType;
   Wavetable type;
@@ -22,11 +21,12 @@ class SoundCircle {
 
   public SoundCircle(int tone) {
     this.tone = tone;
+    oct = tone%12;
     location = new PVector((int) random(width), (int) random(height));
     clr = color(tone%12, 8, 10);//color((int) random(255),(int) random(255),(int) random(255));
     r = 30;//random(20,50);
     freq = getFreq(tone);//tones[tone];//(int) random(50,5000);
-    println(tone + " "+freq);
+    //   println(tone + " "+freq);
     simpleType = (int) random(3);
     switch(simpleType) {
     case 0: 
@@ -81,7 +81,9 @@ class SoundCircle {
     wave.setAmplitude (rel);
 
     int opa = (int) map(rel, 0, 1, 6, 12);
-    clr = color(tone%12, 12-rel*12, 12-rel*12, opa );
+    clr = color(tone%12, 12-octaves+oct, 12-rel*12, opa );
+//clr = color((tone%12)*toneClr, (12-octaves+oct)*toneClr, (12-rel*12)*toneClr, opa );
+
     fill(clr);
     noStroke();
     r = map(rel, 0, 1, 20, 60);
@@ -107,6 +109,5 @@ class SoundCircle {
   void addBoid(int type) {
     boidsInMyArea [type]++;
   }
-
 }
 

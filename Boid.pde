@@ -18,6 +18,13 @@ class Boid {
   boolean filtering;
   color clr;
   IIRFilter filt;
+  // is set in the align method, see render for effect
+  int nbsSz;
+  
+  // cohesion-center;
+  PVector cohesionPoint;
+  
+  SoundCircle minCircle, scnClosest;
 
   Boid(float x, float y) {
     acceleration = new PVector(0, 0);
@@ -33,23 +40,11 @@ class Boid {
   void run(ArrayList<Boid> boids) {
     flock(boids);
     update();
+    // get the closest soundcircle
+    calcSss();
+    println(minCircle);
     borders();
     render();
-
-    float minDist = 30000;
-    SoundCircle minCircle = null;
-
-    for (int i=0; i < ss; i++) {
-      SoundCircle c = circles.get(i);
-      float distance = location.dist(c.location);
-      if (distance < minDist) {
-        minDist = distance;
-        minCircle = c;
-      }
-    }
-    minCircle.addBoid(type); 
-    stroke (minCircle.tone%12, 12, 12);
-    line(location.x, location.y, minCircle.location.x, minCircle.location.y);
   }
 
   void applyForce(PVector force) {
@@ -83,6 +78,21 @@ class Boid {
     acceleration.mult(0);
   }
 
+  void calcSss() {
+    float minDist = 30000;
+    minCircle = null;
+
+    for (int i=0; i < ss; i++) {
+      SoundCircle c = circles.get(i);
+      float distance = location.dist(c.location);
+      if (distance < minDist) {
+        minDist = distance;
+        scnClosest = minCircle;
+        minCircle = c;
+      }
+    }
+    minCircle.addBoid(type);
+  }
   // A method that calculates and applies a steering force towards a target
   // STEER = DESIRED MINUS VELOCITY
   PVector seek(PVector target) {
@@ -99,13 +109,25 @@ class Boid {
   void render() {
     // Draw a triangle rotated in the direction of velocity
     float theta = velocity.heading2D() + radians(90);
-    fill(12, 0, 12);
+    if (minCircle != null) {
+      // not working yet: colorLerp between 1st and 2nd closest
+      //      if (scnClosest != null) {
+      //        float min_Scn_rel = location.dist(scnClosest.location) / location.dist(minCircle.location);
+      //        fill(map(min_Scn_rel, 0, 1, hue(minCircle.clr), 2*hue(minCircle.clr)-hue(scnClosest.clr)) , 12, 12);
+      //      }
+      //      else
+      fill(hue(minCircle.clr), 12, 12);
+    }
+    else 
+      fill(12, 0, 12);
     //stroke(0);
     noStroke();
     pushMatrix();
     translate(location.x, location.y);
     rotate(theta);
-
+    if (random(1) < nbsSz/(float)n) {
+      scale(2+5*(nbsSz/(float)n));
+    }
     switch (type) {
     case 0:
       beginShape(TRIANGLES);
@@ -122,6 +144,14 @@ class Boid {
       break;
     }
     popMatrix();
+    noFill();
+    stroke(minCircle.clr);
+//    line(location.x, location.y, minCircle.location.x, minCircle.location.y);
+ // cohesionPoint is calculated in cohesion.
+  bezier(location.x, location.y,
+  cohesionPoint.x,cohesionPoint.y,
+  cohesionPoint.x,cohesionPoint.y,
+  minCircle.location.x, minCircle.location.y);
   }
 
   // Wraparound
@@ -186,6 +216,7 @@ class Boid {
       sum.mult(maxspeed);
       PVector steer = PVector.sub(sum, velocity);
       steer.limit(maxforce);
+      nbsSz = count;
       return steer;
     } 
     else {
@@ -208,9 +239,11 @@ class Boid {
     }
     if (count > 0) {
       sum.div(count);
+      cohesionPoint = sum;
       return seek(sum);  // Steer towards the location
     } 
     else {
+      cohesionPoint = location;
       return new PVector(0, 0);
     }
   }
