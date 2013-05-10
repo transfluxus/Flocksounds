@@ -5,49 +5,71 @@ import ddf.minim.effects.*;
 Minim       minim;
 AudioOutput out;
 
-int n=200;
+int n=400;
 Flock flock;
 
 int ss;
-ArrayList<SoundCircle> circles = new ArrayList<SoundCircle>();
+ArrayList<SoundForm> forms = new ArrayList<SoundForm>();
 
+int baseOctave = 1;
 int octaves = 5;
+int[] tones;
 
-int toneClr = 256/12;
+int colorRange= 36;
+int toneClr = colorRange/12;
 
 PGraphics flockGraphic;
 
+
+
 void setup() {
-  size(displayWidth, displayHeight,P2D);
+  size(displayWidth, displayHeight, P2D);
   // try-out drawinng the flock on an graphic, with fade, no background
   /*  flockGraphic = createGraphics(displayWidth, displayHeight);
    flockGraphic.beginDraw();
    flockGraphic.colorMode(HSB);
    flockGraphic.endDraw(); */
   flock = new Flock();
-  colorMode(HSB, 12);
+  colorMode(HSB, colorRange);
 
   minim = new Minim(this);
   out = minim.getLineOut();
   ellipseMode(RADIUS);
-  rectMode(CORNER);
-  int baseTone = (int) random(28, 40);
+  rectMode(CENTER);
+  initSounds();
+  // Add an initial set of boids into the system
+  initFlock();
+  initForms();
+  oscInit();
+  soundFormInfo_Send();
+  smooth();
+}
+
+void initSounds() {
+  int baseTone = (int) random(baseOctave*12, (baseOctave+1)*12);
   // get the tones from the function jazzchord, in the notes tab
-  int[] tones = new int[octaves*4];
+  tones = new int[octaves*4];
   for (int oct = 0; oct <octaves;oct++) {
     for (int i=0; i < 4; i++) { //chord 
       tones[oct*4+i] = baseTone + 12*oct +jazzchord(i);
     }
   }
   ss = tones.length;
-  // Add an initial set of boids into the system
+}
+
+void initFlock() {  
   for (int i = 0; i < n; i++) {
     Boid b = new Boid(width/2, height/2);
     flock.addBoid(b);
   }
+}
+
+void initForms() {
+  for (SoundForm sf: forms)
+    sf.unPatch();
+  forms.clear();
   for (int i=0; i < ss;i++)
-    circles.add(new SoundCircle(tones[i]));
-  smooth();
+    forms.add(new SoundForm(i,tones[i]));
 }
 
 void draw() {
@@ -62,8 +84,30 @@ void draw() {
    // Instructions
    //  fill(0);
    */
+      noStroke();
   for (int i=0; i < ss;i++) {
-    circles.get(i).draw();
+    forms.get(i).draw();
   }
 }
+
+void keyPressed() {
+  switch(key) {
+  case 's': 
+    initForms();
+    break;
+  case 'f':
+    initFlock();
+    break;
+    //else if (
+  }
+}
+
+// bugs
+// bezierpoints btw. boid and soundforms
+// falsche farben der bezierkurven
+// falsche drehrichtung der sf
+
+// ideen:
+// klaviertasten
+
 

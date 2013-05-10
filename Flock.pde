@@ -8,6 +8,8 @@
 class Flock {
   ArrayList<Boid> boids; // An ArrayList for all the boids
 
+  float maxspeed_Deriv = 0.2;
+
   Flock() {
     boids = new ArrayList<Boid>(); // Initialize the ArrayList
   }
