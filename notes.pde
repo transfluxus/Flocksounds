@@ -5,7 +5,7 @@ float getFreq(int n) {
 
 int jazzchord(int i ) {
   int[] c = { 
-    0, 4, 7, 10
+    0, 4, 7, 9
   };
   return c[i];
 }

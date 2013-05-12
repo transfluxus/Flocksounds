@@ -40,8 +40,8 @@ void setup() {
   // Add an initial set of boids into the system
   initFlock();
   initForms();
-  oscInit();
-  soundFormInfo_Send();
+//  oscInit();
+//  soundFormInfo_Send();
   smooth();
 }
 
@@ -100,6 +100,16 @@ void keyPressed() {
     break;
     //else if (
   }
+}
+
+void mousePressed() {
+ if(mouseButton==RIGHT) {
+   for (int i=0; i < ss;i++)
+ if (forms.get(i).location.dist(new PVector(mouseX, mouseY)) <forms.get(i).r ) {
+  println(hue(forms.get(i).clr)+ " "+forms.get(i).tone);
+   break;
+ }
+ } 
 }
 
 // bugs

@@ -118,15 +118,13 @@ class Boid {
       if (scnClosest != null) {
         minDist = location.dist(minCircle.location);
         float min_Scn_rel = minDist / (minDist+location.dist(scnClosest.location)) ;
-        fill((hue(minCircle.clr)+(hue(scnClosest.clr)-hue(minCircle.clr))*min_Scn_rel)%colorRange, colorRange-1, colorRange-1);
+        fill(hue(minCircle.clr)+((hue(scnClosest.clr)-hue(minCircle.clr))*min_Scn_rel)%colorRange, colorRange-1, colorRange-1);
         //        fill(map(min_Scn_rel, 0, 1, hue(minCircle.clr), (2*hue(minCircle.clr)-hue(scnClosest.clr))%12), 12, 12);
         // println(hue(minCircle.clr) + ","+hue(scnClosest.clr) + " // "+min_Scn_rel);
-      }
-      else
-        fill(hue(minCircle.clr), colorRange, colorRange-1);
+      } 
+      else 
+        fill(hue(minCircle.clr), colorRange-1, colorRange-1);
     }
-    else 
-      fill(colorRange-1, 0, colorRange-1);
     //stroke(0);
     noStroke();
     pushMatrix();
@@ -152,14 +150,15 @@ class Boid {
     }
     popMatrix();
     noFill();
-    stroke(minCircle.clr);
+
     //    line(location.x, location.y, minCircle.location.x, minCircle.location.y);
     // cohesionPoint is calculated in cohesion.
-    if(lineInvert>minDist) {
-     stroke((int)(colorRange*0.5+ hue(minCircle.clr))%colorRange,colorRange-1,colorRange-1);
+    if (lineInvert>minDist) {
+      stroke((int)(colorRange*0.5+ hue(minCircle.clr))%colorRange, colorRange-1, colorRange-1);
       lineInvert -= minDist;
-    }
-
+    } 
+    else
+      stroke(minCircle.clr);
     bezier(location.x, location.y, 
     cohesionPoint.x, cohesionPoint.y, 
     cohesionPoint.x, cohesionPoint.y, 
