@@ -73,3 +73,16 @@ sketch.properties
 web-export/Flocksoundss.pde
 web-export/index.html
 web-export/processing.js
+application.macosx/Flocksoundss.app/Contents/Resources/Java/data/a.png
+application.macosx/Flocksoundss.app/Contents/Resources/Java/oscP5.jar
+application.macosx/source/keys.pde
+application.macosx/source/parameter.pde
+application.macosx/source/test.pde
+application.windows32/data/a.png
+application.windows32/source/keys.pde
+application.windows32/source/parameter.pde
+application.windows32/source/test.pde
+application.windows64/data/a.png
+application.windows64/source/keys.pde
+application.windows64/source/parameter.pde
+application.windows64/source/test.pde

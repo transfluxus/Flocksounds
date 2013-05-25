@@ -27,6 +27,7 @@ class Boid {
 
   SoundForm minCircle, scnClosest;
 
+  float minDist;
   float lineInvert = 0;
 
   Boid(float x, float y) {
@@ -48,6 +49,7 @@ class Boid {
     borders();
     render();
     lineInvert+=lineSpeed;
+    println(lineInvert+ " "+minDist);
   }
 
   void applyForce(PVector force) {
@@ -82,7 +84,8 @@ class Boid {
   }
 
   void calcSss() {
-    float minDist = 30000;
+    minDist = 30000;
+    float min2Dist = 30000;
     minCircle = null;
 
     for (int i=0; i < ss; i++) {
@@ -92,6 +95,10 @@ class Boid {
         minDist = distance;
         scnClosest = minCircle;
         minCircle = c;
+      } 
+      else       if (distance < min2Dist) {
+        min2Dist = distance;
+        scnClosest = c;
       }
     }
     minCircle.addBoid(this);
@@ -110,59 +117,68 @@ class Boid {
   }
 
   void render() {
+
     // Draw a triangle rotated in the direction of velocity
     float theta = velocity.heading2D() + radians(90);
-    float minDist =0;
-    if (minCircle != null) {
-      //     not working yet: colorLerp between 1st and 2nd closest
-      if (scnClosest != null) {
-        minDist = location.dist(minCircle.location);
-        float min_Scn_rel = minDist / (minDist+location.dist(scnClosest.location)) ;
-        fill(hue(minCircle.clr)+((hue(scnClosest.clr)-hue(minCircle.clr))*min_Scn_rel)%colorRange, colorRange-1, colorRange-1);
-        //        fill(map(min_Scn_rel, 0, 1, hue(minCircle.clr), (2*hue(minCircle.clr)-hue(scnClosest.clr))%12), 12, 12);
-        // println(hue(minCircle.clr) + ","+hue(scnClosest.clr) + " // "+min_Scn_rel);
-      } 
-      else 
-        fill(hue(minCircle.clr), colorRange-1, colorRange-1);
-    }
-    //stroke(0);
+    color fillColor=closeFormColors();
+
+    //  fill(fillColor);
     noStroke();
     pushMatrix();
     translate(location.x, location.y);
     rotate(theta);
-    if (random(1) < nbsSz/(float)n) {
+    if (random_BoidScaleUp && random(1) < nbsSz/(float)n) {
       scale(2+5*(nbsSz/(float)n));
     }
-    switch (type) {
-    case 0:
-      beginShape(TRIANGLES);
-      vertex(0, -r*2);
-      vertex(-r, r*2);
-      vertex(r, r*2);
-      endShape();
-      break;
-    case 1:
-      ellipse (0, 0, r, r);
-      break;
-    case 2:
-      rect (-r, -r, 2*r, 2*r);
-      break;
+    if (boidsMode == GRADIANTS) {
+      tint(hue(fillColor), strongColor, strongColor, colorRange*0.2f);
+      image(boidImage, 0, 0, 60, 60);
+    } 
+    else if (boidsMode == FORMS) {
+      //    println(type + " "+fillColor);
+      fill(fillColor);
+      switch (type) {
+      case 0:
+        beginShape(TRIANGLES);
+        vertex(0, -r*2);
+        vertex(-r, r*2);
+        vertex(r, r*2);
+        endShape();
+        break;
+      case 1:
+        ellipse (0, 0, r, r);
+        break;
+      case 2:
+        rect (-r, -r, 2*r, 2*r);
+        break;
+      }
     }
     popMatrix();
     noFill();
 
-    //    line(location.x, location.y, minCircle.location.x, minCircle.location.y);
-    // cohesionPoint is calculated in cohesion.
-    if (lineInvert>minDist) {
-      stroke((int)(colorRange*0.5+ hue(minCircle.clr))%colorRange, colorRange-1, colorRange-1);
-      lineInvert -= minDist;
-    } 
+    if (showCurves_boidToForm) {
+      if (lineInvert>minDist) {
+        stroke((int)(colorRange*0.5+ hue(minCircle.clr))%colorRange, strongColor, strongColor);
+        lineInvert =0;
+      } 
+      else 
+        stroke(minCircle.clr);
+      bezier(location.x, location.y, 
+      cohesionPoint.x, cohesionPoint.y, 
+      cohesionPoint.x, cohesionPoint.y, 
+      minCircle.location.x, minCircle.location.y);
+    }
+  }
+
+  color closeFormColors() {
+    float minDist = location.dist(minCircle.location);
+    float min_Scn_rel = minDist / (minDist+location.dist(scnClosest.location));
+    float div =  hue(scnClosest.clr) - hue(minCircle.clr) ;
+    boolean start1 = div < colorRange/2 && div >0;
+    if (start1)
+      return color((hue(minCircle.clr)+((hue(scnClosest.clr)-hue(minCircle.clr))*min_Scn_rel))%colorRange, strongColor, strongColor);
     else
-      stroke(minCircle.clr);
-    bezier(location.x, location.y, 
-    cohesionPoint.x, cohesionPoint.y, 
-    cohesionPoint.x, cohesionPoint.y, 
-    minCircle.location.x, minCircle.location.y);
+      return color((hue(scnClosest.clr)+((hue(minCircle.clr)-hue(scnClosest.clr))*min_Scn_rel))%colorRange, strongColor, strongColor);
   }
 
   // Wraparound

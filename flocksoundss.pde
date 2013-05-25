@@ -5,7 +5,7 @@ import ddf.minim.effects.*;
 Minim       minim;
 AudioOutput out;
 
-int n=400;
+int n=800;
 Flock flock;
 
 int ss;
@@ -15,13 +15,15 @@ int baseOctave = 1;
 int octaves = 5;
 int[] tones;
 
-int colorRange= 36;
+int colorRange= 180;
 int toneClr = colorRange/12;
+int strongColor= (int)(colorRange*0.9);
 
-PGraphics flockGraphic;
+//PGraphics flockGraphic;
 
+PImage boidImage;
 
-
+SoundForm selected;
 void setup() {
   size(displayWidth, displayHeight, P2D);
   // try-out drawinng the flock on an graphic, with fade, no background
@@ -40,8 +42,12 @@ void setup() {
   // Add an initial set of boids into the system
   initFlock();
   initForms();
-//  oscInit();
-//  soundFormInfo_Send();
+  //  oscInit();
+  //  soundFormInfo_Send();
+  if (boidsMode==GRADIANTS) {
+    boidImage= loadImage("a.png");
+    blendMode(ADD);
+  }
   smooth();
 }
 
@@ -69,7 +75,7 @@ void initForms() {
     sf.unPatch();
   forms.clear();
   for (int i=0; i < ss;i++)
-    forms.add(new SoundForm(i,tones[i]));
+    forms.add(new SoundForm(i, tones[i]));
 }
 
 void draw() {
@@ -84,32 +90,35 @@ void draw() {
    // Instructions
    //  fill(0);
    */
-      noStroke();
+  noStroke();
   for (int i=0; i < ss;i++) {
     forms.get(i).draw();
   }
+  if (selected != null)
+    selected.location.set(mouseX, mouseY, 0);
+  //    mousePosToGetBoidColorTest();
 }
 
-void keyPressed() {
-  switch(key) {
-  case 's': 
-    initForms();
-    break;
-  case 'f':
-    initFlock();
-    break;
-    //else if (
-  }
-}
+
 
 void mousePressed() {
- if(mouseButton==RIGHT) {
-   for (int i=0; i < ss;i++)
- if (forms.get(i).location.dist(new PVector(mouseX, mouseY)) <forms.get(i).r ) {
-  println(hue(forms.get(i).clr)+ " "+forms.get(i).tone);
-   break;
- }
- } 
+  if (mouseButton==RIGHT) {
+    for (int i=0; i < ss;i++)
+      if (forms.get(i).location.dist(new PVector(mouseX, mouseY)) <forms.get(i).r ) {
+        println(hue(forms.get(i).clr)+ " "+forms.get(i).tone);
+        break;
+      }
+  } 
+  else
+    for (int i=0; i < ss;i++)
+      if (forms.get(i).location.dist(new PVector(mouseX, mouseY)) <forms.get(i).r ) {
+        selected = forms.get(i);
+        break;
+      }
+}
+
+void mouseReleased() {
+  selected = null;
 }
 
 // bugs
@@ -119,5 +128,4 @@ void mousePressed() {
 
 // ideen:
 // klaviertasten
-
 
