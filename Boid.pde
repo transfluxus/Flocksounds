@@ -47,9 +47,10 @@ class Boid {
     // get the closest SoundForm
     calcSss();
     borders();
+    if(renderFlock)
     render();
     lineInvert+=lineSpeed;
-    println(lineInvert+ " "+minDist);
+//    println(lineInvert+ " "+minDist);
   }
 
   void applyForce(PVector force) {
@@ -178,7 +179,7 @@ class Boid {
     if (start1)
       return color((hue(minCircle.clr)+((hue(scnClosest.clr)-hue(minCircle.clr))*min_Scn_rel))%colorRange, strongColor, strongColor);
     else
-      return color((hue(scnClosest.clr)+((hue(minCircle.clr)-hue(scnClosest.clr))*min_Scn_rel))%colorRange, strongColor, strongColor);
+      return color((hue(minCircle.clr)-((hue(scnClosest.clr)-hue(minCircle.clr))*min_Scn_rel)+colorRange)%colorRange, strongColor, strongColor);
   }
 
   // Wraparound

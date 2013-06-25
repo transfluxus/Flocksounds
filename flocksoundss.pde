@@ -5,7 +5,7 @@ import ddf.minim.effects.*;
 Minim       minim;
 AudioOutput out;
 
-int n=800;
+int n=400;
 Flock flock;
 
 int ss;
@@ -24,8 +24,12 @@ int strongColor= (int)(colorRange*0.9);
 PImage boidImage;
 
 SoundForm selected;
+AudioRecorder recorder;
+
 void setup() {
   size(displayWidth, displayHeight, P2D);
+//size(1280 , 720 , P2D);
+ // randomSeed(2);
   // try-out drawinng the flock on an graphic, with fade, no background
   /*  flockGraphic = createGraphics(displayWidth, displayHeight);
    flockGraphic.beginDraw();
@@ -49,6 +53,11 @@ void setup() {
     blendMode(ADD);
   }
   smooth();
+  frameRate(25);
+  if (recordSound) {
+    recorder = minim.createRecorder(out, "myrecording.wav", true);
+    recorder.beginRecord();
+  }
 }
 
 void initSounds() {
@@ -97,6 +106,16 @@ void draw() {
   if (selected != null)
     selected.location.set(mouseX, mouseY, 0);
   //    mousePosToGetBoidColorTest();
+  println(frameCount);
+  if (captureImages)
+    saveFrame("pics/frame-####.bmp");
+  if (autoEnd>0 && frameCount == autoEnd) {
+    if (recordSound) {
+      recorder.endRecord();
+      recorder.save();
+    }   
+    exit();
+  }
 }
 
 
