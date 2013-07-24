@@ -1,4 +1,7 @@
 
+int n=50;
+int randomSeed = 3; // -1 for no
+
 static final int FORMS = 0, GRADIANTS= 1, SIMPLE = 2;
 
 int boidsMode = SIMPLE;
@@ -17,4 +20,3 @@ int autoEnd = -1; // end after number of frames
 
 boolean osc = false;
 
-int n=50;

@@ -6,7 +6,6 @@ HashMap<Integer, ArrayList<Boid>> groups = new HashMap<Integer, ArrayList<Boid>>
 
 float neighbordist = 50;
 
-
 class Boid {
 
   final int id;
@@ -19,20 +18,19 @@ class Boid {
   float maxforce;    // Maximum steering force
   float maxspeed;    // Maximum speed
   int type;
-  boolean filtering;
   color clr;
+  boolean[] closeToBorder= new boolean[4];
 
-  // is set in the align method, see render for effect
-  int nbsSz;
-
-  // cohesion-center;
+  PVector sumVel=new PVector();
+  PVector sumLoc=new PVector();
+  int nbCount;
+  // cohesion-center, for bezier curve to soundform
   PVector cohesionPoint;
 
   SoundForm minCircle, scnClosest;
 
   float minDist;
   float lineInvert = 0;
-
 
   Boid(float x, float y, int id) {
     this.id = id;
@@ -67,6 +65,7 @@ class Boid {
   // We accumulate a new acceleration each time based on three rules
   void flock(ArrayList<Boid> boids) {
     PVector sep = separate(boids);   // Separation
+    getNeighbours(boids);
     PVector ali = align(boids);      // Alignment
     PVector coh = cohesion(boids);   // Cohesion
     // Arbitrarily weight these forces
@@ -93,6 +92,7 @@ class Boid {
     location.add(velocity);
     // Reset accelertion to 0 each cycle
     acceleration.mult(0);
+    checkCloseToBorder();
   }
 
   void calcSss() {
@@ -129,18 +129,15 @@ class Boid {
   }
 
   void render() {
-
-    // Draw a triangle rotated in the direction of velocity
     float theta = velocity.heading2D() + radians(90);
     color fillColor=closeFormColors();
-
-    //  fill(fillColor);
     noStroke();
     pushMatrix();
     translate(location.x, location.y);
     rotate(theta);
-    if (random_BoidScaleUp && random(1) < nbsSz/(float)n) {
-      scale(2+5*(nbsSz/(float)n));
+    // nice blinking effect
+    if (random_BoidScaleUp && random(1) < nbCount/(float)n) {
+      scale(2+5*(nbCount/(float)n));
     }
     if (boidsMode == GRADIANTS) {
       tint(hue(fillColor), strongColor, strongColor, colorRange*0.2f);
@@ -167,6 +164,8 @@ class Boid {
     } 
     else if ( boidsMode == SIMPLE) {
       stroke(colorRange);
+      //     if (closeToBorder != 0)
+      //       stroke(0, colorRange, colorRange);
       line(0, 0, 0, 10);
     }
     popMatrix();
@@ -240,55 +239,81 @@ class Boid {
     return steer;
   }
 
-  // Alignment
-  // For every nearby boid in the system, calculate the average velocity
-  PVector align (ArrayList<Boid> boids) {
-    PVector sum = new PVector(0, 0);
-    int count = 0;
+  void getNeighbours(ArrayList<Boid> boids) {
+    sumVel.mult(0);    
+    sumLoc.mult(0);
+    nbCount = 0;
     for (Boid other : boids) {
       float d = PVector.dist(location, other.location);
       if ((d > 0) && (d < neighbordist)) {
-        sum.add(other.velocity);
-        count++;
+        sumVel.add(other.velocity);
+        sumLoc.add(other.location);
+        nbCount++;
         if (other.groupID < groupID) 
           integrateGroupInto(groupID, other.groupID);
       }
     }
-    if (count > 0) {
-      sum.div((float)count);
-      sum.normalize();
-      sum.mult(maxspeed);
-      PVector steer = PVector.sub(sum, velocity);
-      steer.limit(maxforce);
-      nbsSz = count;
-      return steer;
-    } 
-    else {
-      return new PVector(0, 0);
-    }
+    //    print(sum + " "+nbCount);
   }
 
-  // Cohesion
-  // For the average location (i.e. center) of all nearby boids, calculate steering vector towards that location
-  PVector cohesion (ArrayList<Boid> boids) {
-    PVector sum = new PVector(0, 0);   // Start with empty vector to accumulate all locations
-    int count = 0;
-    for (Boid other : boids) {
-      float d = PVector.dist(location, other.location);
-      if ((d > 0) && (d < neighbordist)) {
-        sum.add(other.location); // Add location
-        count++;
-      }
-    }
-    if (count > 0) {
-      sum.div(count);
-      cohesionPoint = sum;
-      return seek(sum);  // Steer towards the location
+  // Alignment
+  // For every nearby boid in the system, calculate the average velocity
+  PVector align (ArrayList<Boid> boids) {
+    PVector dir = new PVector(sumVel.x, sumVel.y);
+    if (nbCount > 0) {
+      dir.div((float)nbCount);
+      dir.setMag(maxspeed);
+      dir.sub(velocity);
+      dir.limit(maxforce);
+      return dir;
     } 
+    else 
+      return new PVector(0, 0);
+  }
+
+  PVector cohesion (ArrayList<Boid> boids) {
+    PVector center = new PVector(sumLoc.x, sumLoc.y); // Start with empty vector to accumulate all locations
+    if (nbCount > 0) {
+      center.div((float) nbCount);
+      cohesionPoint = center;
+      return seek(center); // Steer towards the location
+    }
     else {
       cohesionPoint = location;
       return new PVector(0, 0);
     }
+  }
+
+  void checkCloseToBorder() {
+    java.util.Arrays.fill(closeToBorder, false);
+    if (location.x <  neighbordist)
+      closeToBorder[0] = true;
+    else if (location.x > width-neighbordist)
+      closeToBorder[2] = true;
+    if (   location.y <  neighbordist)
+      closeToBorder[1] = true;
+    else if (location.y > height-neighbordist)
+      closeToBorder[3] = true;
+  }
+
+  boolean borderMatch(Boid other) {
+    for (int i=0; i < 4;i++)
+      if (closeToBorder[i] & other.closeToBorder[(i+2)%4])
+        return true;
+    return false;
+  }
+
+  PVector shiftToMe(Boid other) {
+    PVector loc = new PVector(other.location.x, other.location.y);
+    if (closeToBorder[0])
+      loc.sub(width, 0, 0);
+    else if (closeToBorder[1])
+      loc.sub(0, height, 0);
+    if (closeToBorder[2])
+      loc.add(width, 0, 0);
+    else if (closeToBorder[3])
+      loc.add(0, height, 0);
+    return loc;
   }
 }
 

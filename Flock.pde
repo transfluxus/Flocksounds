@@ -17,13 +17,18 @@ class Flock {
       b.initGroup();
     for (Boid b : boids) 
       b.run(boids);  // Passing the entire list of boids to each boid individually
-    println("flock.run: #groups: " + groups.size());
+//    println("flock.run: #groups: " + groups.size());
   }
 
   void addBoid(Boid b) {
     boids.add(b);
   }
-
+  
+  void applyForce(PVector force) {
+      for (Boid b : boids) 
+       b.applyForce(force);
+  }
+  
   void edit(int num) {
     if (num<0) {
       if (n<=0)

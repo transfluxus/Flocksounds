@@ -29,7 +29,8 @@ AudioRecorder recorder;
 void setup() {
 //  size(displayWidth, displayHeight, P2D);
   size(800,600 , P2D);
-  // randomSeed(2);
+  if(randomSeed != -1)
+  randomSeed(randomSeed);
   // try-out drawinng the flock on an graphic, with fade, no background
   /*  flockGraphic = createGraphics(displayWidth, displayHeight);
    flockGraphic.beginDraw();
