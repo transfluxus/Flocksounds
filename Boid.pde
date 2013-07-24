@@ -1,13 +1,16 @@
-// From The Nature of Code
-// Daniel Shiffman
-// http://natureofcode.com
 
-// Boid class
-// Methods for Separation, Cohesion, Alignment added
-
+// for line to soundform blink animation
 float lineSpeed = 10;
 
+HashMap<Integer, ArrayList<Boid>> groups = new HashMap<Integer, ArrayList<Boid>>();
+
+float neighbordist = 50;
+
+
 class Boid {
+
+  final int id;
+  int groupID;
 
   PVector location;
   PVector velocity;
@@ -18,7 +21,7 @@ class Boid {
   int type;
   boolean filtering;
   color clr;
-  IIRFilter filt;
+
   // is set in the align method, see render for effect
   int nbsSz;
 
@@ -30,14 +33,15 @@ class Boid {
   float minDist;
   float lineInvert = 0;
 
-  Boid(float x, float y) {
+
+  Boid(float x, float y, int id) {
+    this.id = id;
     acceleration = new PVector(0, 0);
     velocity = new PVector(random(-1, 1), random(-1, 1));
     location = new PVector(x, y);
     r = 5.0;
     maxspeed = 3+random(- flock.maxspeed_Deriv, flock.maxspeed_Deriv);
     maxforce = 0.05;
-
     type = (int) random (0, 3);
   }
 
@@ -47,15 +51,17 @@ class Boid {
     // get the closest SoundForm
     calcSss();
     borders();
-    if(renderFlock)
-    render();
+    if (renderFlock)
+      render();
     lineInvert+=lineSpeed;
-//    println(lineInvert+ " "+minDist);
+    //    println(lineInvert+ " "+minDist);
   }
 
-  void applyForce(PVector force) {
-    // We could add mass here if we want A = F / M
-    acceleration.add(force);
+  void initGroup() {
+    ArrayList<Boid> myGroup = new ArrayList<Boid>();
+    myGroup.add(this);
+    groupID = id;
+    groups.put(groupID, myGroup);
   }
 
   // We accumulate a new acceleration each time based on three rules
@@ -72,6 +78,11 @@ class Boid {
     applyForce(ali);
     applyForce(coh);
   }
+
+  void applyForce(PVector force) {
+    acceleration.add(force);
+  }
+
 
   // Method to update location
   void update() {
@@ -153,12 +164,16 @@ class Boid {
         rect (-r, -r, 2*r, 2*r);
         break;
       }
+    } 
+    else if ( boidsMode == SIMPLE) {
+      stroke(colorRange);
+      line(0, 0, 0, 10);
     }
     popMatrix();
     noFill();
-
+    //  curves to the soundforms
     if (showCurves_boidToForm) {
-      if (lineInvert>minDist) {
+      if (lineInvert>minDist) { // line blink effect
         stroke((int)(colorRange*0.5+ hue(minCircle.clr))%colorRange, strongColor, strongColor);
         lineInvert =0;
       } 
@@ -228,7 +243,6 @@ class Boid {
   // Alignment
   // For every nearby boid in the system, calculate the average velocity
   PVector align (ArrayList<Boid> boids) {
-    float neighbordist = 50;
     PVector sum = new PVector(0, 0);
     int count = 0;
     for (Boid other : boids) {
@@ -236,6 +250,8 @@ class Boid {
       if ((d > 0) && (d < neighbordist)) {
         sum.add(other.velocity);
         count++;
+        if (other.groupID < groupID) 
+          integrateGroupInto(groupID, other.groupID);
       }
     }
     if (count > 0) {
@@ -255,7 +271,6 @@ class Boid {
   // Cohesion
   // For the average location (i.e. center) of all nearby boids, calculate steering vector towards that location
   PVector cohesion (ArrayList<Boid> boids) {
-    float neighbordist = 50;
     PVector sum = new PVector(0, 0);   // Start with empty vector to accumulate all locations
     int count = 0;
     for (Boid other : boids) {
@@ -275,5 +290,11 @@ class Boid {
       return new PVector(0, 0);
     }
   }
+}
+
+void integrateGroupInto(int from, int into) {
+  for (Boid b : groups.get(from))
+    b.groupID= groups.get(into).get(0).groupID;
+  groups.get(into).addAll(groups.remove(from));
 }
 

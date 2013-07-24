@@ -5,7 +5,7 @@ import ddf.minim.effects.*;
 Minim       minim;
 AudioOutput out;
 
-int n=400;
+
 Flock flock;
 
 int ss;
@@ -27,9 +27,9 @@ SoundForm selected;
 AudioRecorder recorder;
 
 void setup() {
-  size(displayWidth, displayHeight, P2D);
-//size(1280 , 720 , P2D);
- // randomSeed(2);
+//  size(displayWidth, displayHeight, P2D);
+  size(800,600 , P2D);
+  // randomSeed(2);
   // try-out drawinng the flock on an graphic, with fade, no background
   /*  flockGraphic = createGraphics(displayWidth, displayHeight);
    flockGraphic.beginDraw();
@@ -58,6 +58,8 @@ void setup() {
     recorder = minim.createRecorder(out, "myrecording.wav", true);
     recorder.beginRecord();
   }
+  if (osc)
+    oscInit();
 }
 
 void initSounds() {
@@ -74,7 +76,7 @@ void initSounds() {
 
 void initFlock() {  
   for (int i = 0; i < n; i++) {
-    Boid b = new Boid(width/2, height/2);
+    Boid b = new Boid(width/2, height/2, flock.nextID++);
     flock.addBoid(b);
   }
 }
@@ -106,7 +108,7 @@ void draw() {
   if (selected != null)
     selected.location.set(mouseX, mouseY, 0);
   //    mousePosToGetBoidColorTest();
-  println(frameCount);
+  //  println(frameCount);
   if (captureImages)
     saveFrame("pics/frame-####.bmp");
   if (autoEnd>0 && frameCount == autoEnd) {
@@ -116,6 +118,9 @@ void draw() {
     }   
     exit();
   }
+  if (osc) 
+    osc_send();
+//  println(frameRate);
 }
 
 
@@ -139,6 +144,7 @@ void mousePressed() {
 void mouseReleased() {
   selected = null;
 }
+
 
 // bugs
 // bezierpoints btw. boid and soundforms

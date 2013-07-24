@@ -9,6 +9,12 @@ void keyPressed() {
   case 'f':
     initFlock();
     break;
+  case '+':
+    flock.edit(10);
+    break;
+  case '-':
+    flock.edit(-10);
+    break;
   }
 }
 

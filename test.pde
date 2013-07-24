@@ -1,6 +1,6 @@
 void mousePosToGetBoidColorTest() {
   SoundForm first, second;
-  Boid b = new Boid(mouseX, mouseY);
+  Boid b = new Boid(mouseX, mouseY,flock.nextID++);
   b.calcSss();
   color c = b.closeFormColors();
   stroke(colorRange);
