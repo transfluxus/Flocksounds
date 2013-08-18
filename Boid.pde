@@ -128,6 +128,17 @@ class Boid {
     return steer;
   }
 
+  PVector seek(PVector target,float force) {
+    PVector desired = PVector.sub(target, location);  // A vector pointing from the location to the target
+    // Normalize desired and scale to maximum speed
+    desired.normalize();
+    desired.mult(maxspeed);
+    // Steering = Desired minus Velocity
+    PVector steer = PVector.sub(desired, velocity);
+    steer.setMag(force);  // Limit to maximum steering force
+    return steer;
+  }
+
   void render() {
     float theta = velocity.heading2D() + radians(90);
     color fillColor=closeFormColors();

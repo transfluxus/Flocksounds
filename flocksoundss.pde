@@ -51,7 +51,7 @@ void setup() {
   //  soundFormInfo_Send();
   if (boidsMode==GRADIANTS) {
     boidImage= loadImage("a.png");
-    blendMode(ADD);
+    blendMode(MULTIPLY);
   }
   smooth();
   frameRate(25);
