@@ -5,9 +5,11 @@
 // Boid class
 // Methods for Separation, Cohesion, Alignment added
 
-float lineSpeed = 10;
+
 
 class Boid {
+
+  int id;
 
   PVector location;
   PVector velocity;
@@ -15,42 +17,35 @@ class Boid {
   float r;
   float maxforce;    // Maximum steering force
   float maxspeed;    // Maximum speed
-  int type;
-  boolean filtering;
-  color clr;
-  IIRFilter filt;
+
+    color clr;
+
   // is set in the align method, see render for effect
   int nbsSz;
 
   // cohesion-center;
   PVector cohesionPoint;
 
-  SoundForm minCircle, scnClosest;
 
-  float minDist;
-  float lineInvert = 0;
-
-  Boid(float x, float y) {
+  Boid(float x, float y, int id) {
     acceleration = new PVector(0, 0);
     velocity = new PVector(random(-1, 1), random(-1, 1));
     location = new PVector(x, y);
     r = 5.0;
-    maxspeed = 3+random(- flock.maxspeed_Deriv, flock.maxspeed_Deriv);
+    maxspeed = 3;
     maxforce = 0.05;
-
-    type = (int) random (0, 3);
+    this.id = id;
+    clr = color(id);
   }
 
   void run(ArrayList<Boid> boids) {
     flock(boids);
     update();
     // get the closest SoundForm
-    calcSss();
     borders();
-    if(renderFlock)
-    render();
-    lineInvert+=lineSpeed;
-//    println(lineInvert+ " "+minDist);
+    if (renderFlock)
+      render();
+    //    println(lineInvert+ " "+minDist);
   }
 
   void applyForce(PVector force) {
@@ -84,26 +79,7 @@ class Boid {
     acceleration.mult(0);
   }
 
-  void calcSss() {
-    minDist = 30000;
-    float min2Dist = 30000;
-    minCircle = null;
 
-    for (int i=0; i < ss; i++) {
-      SoundForm c = forms.get(i);
-      float distance = location.dist(c.location);
-      if (distance < minDist) {
-        minDist = distance;
-        scnClosest = minCircle;
-        minCircle = c;
-      } 
-      else       if (distance < min2Dist) {
-        min2Dist = distance;
-        scnClosest = c;
-      }
-    }
-    minCircle.addBoid(this);
-  }
   // A method that calculates and applies a steering force towards a target
   // STEER = DESIRED MINUS VELOCITY
   PVector seek(PVector target) {
@@ -118,68 +94,51 @@ class Boid {
   }
 
   void render() {
-
-    // Draw a triangle rotated in the direction of velocity
-    float theta = velocity.heading2D() + radians(90);
-    color fillColor=closeFormColors();
-
-    //  fill(fillColor);
-    noStroke();
-    pushMatrix();
-    translate(location.x, location.y);
-    rotate(theta);
-    if (random_BoidScaleUp && random(1) < nbsSz/(float)n) {
-      scale(2+5*(nbsSz/(float)n));
+    if (!renderOrder) {
+      renderNbs();
+      renderBoid();
     }
-    if (boidsMode == GRADIANTS) {
-      tint(hue(fillColor), strongColor, strongColor, colorRange*0.2f);
-      image(boidImage, 0, 0, 60, 60);
-    } 
-    else if (boidsMode == FORMS) {
-      //    println(type + " "+fillColor);
-      fill(fillColor);
-      switch (type) {
-      case 0:
+  }
+
+  void renderBoid() {
+    if (renderBoid) {
+      float theta = velocity.heading2D() + radians(90);
+      noStroke();
+      pushMatrix();
+      translate(location.x, location.y);
+      rotate(theta);
+      if (boidsMode == GRADIANTS) {
+        tint(id, n*.75);
+        image(boidImage, 0, 0, 60, 60);
+      } 
+      else if (boidsMode == FORMS) {
+        fill(clr);
         beginShape(TRIANGLES);
         vertex(0, -r*2);
         vertex(-r, r*2);
         vertex(r, r*2);
         endShape();
-        break;
-      case 1:
-        ellipse (0, 0, r, r);
-        break;
-      case 2:
-        rect (-r, -r, 2*r, 2*r);
-        break;
       }
-    }
-    popMatrix();
-    noFill();
-
-    if (showCurves_boidToForm) {
-      if (lineInvert>minDist) {
-        stroke((int)(colorRange*0.5+ hue(minCircle.clr))%colorRange, strongColor, strongColor);
-        lineInvert =0;
-      } 
-      else 
-        stroke(minCircle.clr);
-      bezier(location.x, location.y, 
-      cohesionPoint.x, cohesionPoint.y, 
-      cohesionPoint.x, cohesionPoint.y, 
-      minCircle.location.x, minCircle.location.y);
+      popMatrix();
     }
   }
 
-  color closeFormColors() {
-    float minDist = location.dist(minCircle.location);
-    float min_Scn_rel = minDist / (minDist+location.dist(scnClosest.location));
-    float div =  hue(scnClosest.clr) - hue(minCircle.clr) ;
-    boolean start1 = div < colorRange/2 && div >0;
-    if (start1)
-      return color((hue(minCircle.clr)+((hue(scnClosest.clr)-hue(minCircle.clr))*min_Scn_rel))%colorRange, strongColor, strongColor);
-    else
-      return color((hue(minCircle.clr)-((hue(scnClosest.clr)-hue(minCircle.clr))*min_Scn_rel)+colorRange)%colorRange, strongColor, strongColor);
+  void renderNbs() {
+    if (renderNbs) {
+      for (int i=1; i <= lineConnect;i++) {     
+        strokeWeight(maxConnectStrokeWeight/i);
+        if (id-i>=0) {
+          Boid b = flock.boids.get(id-i);
+          stroke(id, n*max(0, 50-location.dist(b.location)));
+          line(location.x, location.y, b.location.x, b.location.y);
+        }
+        if (id+i<n) {
+          Boid b = flock.boids.get(id+i);
+          stroke(id, n*max(0, 50-location.dist(b.location)));
+          line(location.x, location.y, b.location.x, b.location.y);
+        }
+      }
+    }
   }
 
   // Wraparound
@@ -233,8 +192,8 @@ class Boid {
     int count = 0;
     for (Boid other : boids) {
       float d = PVector.dist(location, other.location);
-      if ((d > 0) && (d < neighbordist)) {
-        sum.add(other.velocity);
+      if ((d > 0) && (d < neighbordist) && (isNB(other) || !nbAlign)) {
+        sum.add(PVector.mult(other.velocity, neighbourhoodStrength(other)));
         count++;
       }
     }
@@ -260,8 +219,9 @@ class Boid {
     int count = 0;
     for (Boid other : boids) {
       float d = PVector.dist(location, other.location);
-      if ((d > 0) && (d < neighbordist)) {
-        sum.add(other.location); // Add location
+      if ((d > 0) && (d < neighbordist) && (isNB(other) || !nbCohesion)) {
+        PVector add = PVector.lerp(location, other.location, neighbourhoodStrength(other));
+        sum.add(add); // Add location
         count++;
       }
     }
@@ -274,6 +234,16 @@ class Boid {
       cohesionPoint = location;
       return new PVector(0, 0);
     }
+  }
+
+  boolean isNB(Boid b) {
+    return abs(id-b.id)< lineConnect;
+  }
+
+  float neighbourhoodStrength(Boid b) {
+    if (abs(id-b.id)<=lineConnect)
+      return  (exp(-sq(abs(id-b.id))/(sq(lineConnect))));
+    else return 0;
   }
 }
 

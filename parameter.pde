@@ -1,16 +1,29 @@
-
+String song = "Frances9b.mp3";
 static final int FORMS = 0, GRADIANTS= 1;
 
-int boidsMode = FORMS;
-boolean random_BoidScaleUp = true;
-boolean formsMovable = true;
+int boidsMode = GRADIANTS;
 
-boolean showCurves_boidToForm = true;
 boolean renderFlock = true;
-boolean renderForms = true;
+boolean renderBoid = true;
+boolean renderNbs = true;
+// first update all, then render in order by rendertype
+boolean renderOrder=true;
+//String renderFcts[] = {renderNbs,renderBoid};
 
-boolean playSounds = true;
 
 boolean recordSound=false;
 boolean captureImages= false;
 int autoEnd = -1;
+
+int n=400;
+
+int lineConnect = 8;
+float maxConnectStrokeWeight = 3;
+boolean nbCohesion = true;
+boolean nbAlign = true;
+
+boolean clearFrameScreen = true;
+
+color bgClr = color(0, 100, 200);
+
+
