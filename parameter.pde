@@ -3,6 +3,9 @@ static final int FORMS = 0, GRADIANTS= 1;
 
 int boidsMode = GRADIANTS;
 
+float GradiantTint = 0.1f;
+float gradiantSize = 100;
+
 boolean renderFlock = true;
 boolean renderBoid = true;
 boolean renderNbs = true;
@@ -17,12 +20,14 @@ int autoEnd = -1;
 
 int n=400;
 
-int lineConnect = 8;
+int lineConnect = 20;
 float maxConnectStrokeWeight = 3;
 boolean nbCohesion = true;
 boolean nbAlign = true;
 
-boolean clearFrameScreen = true;
+boolean clearFrameScreen = false;
+boolean screenFade = true;
+int fadeStrength = 2;
 
 color bgClr = color(0, 100, 200);
 

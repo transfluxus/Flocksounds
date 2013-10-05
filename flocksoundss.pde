@@ -28,25 +28,14 @@ void setup() {
   background(bgClr);
 }
 
-void initSounds() {
-  minim = new Minim(this);
-  jingle = minim.loadFile(song, 1024);
-  jingle.loop();
-  fftLog = new FFT( jingle.bufferSize(), jingle.sampleRate() );
-  fftLog.logAverages( 22, 30 );
-  n = fftLog.avgSize();
-}
-
-void initFlock() {  
-  for (int i = 0; i < n; i++) {
-    Boid b = new Boid(width/2, height/2, i);
-    flock.addBoid(b);
-  }
-}
-
 void draw() {
 if(clearFrameScreen)
 background(bgClr);
+else if(screenFade) {
+  
+ fill(red(bgClr),green(bgClr),blue(bgClr),fadeStrength);
+rect(width/2,height/2,width+10,height+10); 
+}
   flock.run();
   if (captureImages)
     saveFrame("pics/frame-##.bmp");

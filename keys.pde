@@ -3,6 +3,9 @@ void keyPressed() {
   case 'f':
     initFlock();
     break;
+  case 's':
+    saveFrame("img-##"); 
+    break;
   }
 }
 

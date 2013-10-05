@@ -5,6 +5,7 @@
 // Boid class
 // Methods for Separation, Cohesion, Alignment added
 
+int nbDist = 100;
 
 
 class Boid {
@@ -59,9 +60,9 @@ class Boid {
     PVector ali = align(boids);      // Alignment
     PVector coh = cohesion(boids);   // Cohesion
     // Arbitrarily weight these forces
-    sep.mult(1.5);
-    ali.mult(1.0);
-    coh.mult(1.0);
+    sep.mult(1.0);
+    ali.mult(1.5);
+    coh.mult(1.1);
     // Add the force vectors to acceleration
     applyForce(sep);
     applyForce(ali);
@@ -108,8 +109,8 @@ class Boid {
       translate(location.x, location.y);
       rotate(theta);
       if (boidsMode == GRADIANTS) {
-        tint(id, n*.75);
-        image(boidImage, 0, 0, 60, 60);
+        tint(id, n*GradiantTint);
+        image(boidImage, 0, 0, gradiantSize, gradiantSize);
       } 
       else if (boidsMode == FORMS) {
         fill(clr);
@@ -129,12 +130,12 @@ class Boid {
         strokeWeight(maxConnectStrokeWeight/i);
         if (id-i>=0) {
           Boid b = flock.boids.get(id-i);
-          stroke(id, n*max(0, 50-location.dist(b.location)));
+          stroke(id, 2*n*max(0, nbDist-location.dist(b.location)));
           line(location.x, location.y, b.location.x, b.location.y);
         }
         if (id+i<n) {
           Boid b = flock.boids.get(id+i);
-          stroke(id, n*max(0, 50-location.dist(b.location)));
+          stroke(id, 2*n*max(0, nbDist-location.dist(b.location)));
           line(location.x, location.y, b.location.x, b.location.y);
         }
       }
@@ -187,12 +188,11 @@ class Boid {
   // Alignment
   // For every nearby boid in the system, calculate the average velocity
   PVector align (ArrayList<Boid> boids) {
-    float neighbordist = 50;
     PVector sum = new PVector(0, 0);
     int count = 0;
     for (Boid other : boids) {
       float d = PVector.dist(location, other.location);
-      if ((d > 0) && (d < neighbordist) && (isNB(other) || !nbAlign)) {
+      if ((d > 0) && (d < nbDist) && (isNB(other) || !nbAlign)) {
         sum.add(PVector.mult(other.velocity, neighbourhoodStrength(other)));
         count++;
       }
@@ -214,12 +214,11 @@ class Boid {
   // Cohesion
   // For the average location (i.e. center) of all nearby boids, calculate steering vector towards that location
   PVector cohesion (ArrayList<Boid> boids) {
-    float neighbordist = 50;
     PVector sum = new PVector(0, 0);   // Start with empty vector to accumulate all locations
     int count = 0;
     for (Boid other : boids) {
       float d = PVector.dist(location, other.location);
-      if ((d > 0) && (d < neighbordist) && (isNB(other) || !nbCohesion)) {
+      if ((d > 0) && (d < nbDist) && (isNB(other) || !nbCohesion)) {
         PVector add = PVector.lerp(location, other.location, neighbourhoodStrength(other));
         sum.add(add); // Add location
         count++;
