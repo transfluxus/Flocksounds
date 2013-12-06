@@ -98,7 +98,7 @@ class Boid {
   void calcSss() {
     minDist = 30000;
     float min2Dist = 30000;
-    minCircle = null;
+    SoundForm minCircle = null;
 
     for (int i=0; i < ss; i++) {
       SoundForm c = forms.get(i);
@@ -113,8 +113,12 @@ class Boid {
         scnClosest = c;
       }
     }
+    if (this.minCircle != null && this.minCircle != minCircle)
+      this.minCircle.removeBoid(this);
+    this.minCircle = minCircle;
     minCircle.addBoid(this);
   }
+
   // A method that calculates and applies a steering force towards a target
   // STEER = DESIRED MINUS VELOCITY
   PVector seek(PVector target) {
@@ -128,7 +132,7 @@ class Boid {
     return steer;
   }
 
-  PVector seek(PVector target,float force) {
+  PVector seek(PVector target, float force) {
     PVector desired = PVector.sub(target, location);  // A vector pointing from the location to the target
     // Normalize desired and scale to maximum speed
     desired.normalize();

@@ -30,12 +30,8 @@ void setup() {
 //  size(displayWidth, displayHeight, P2D);
   size(800,600 , P2D);
   if(randomSeed != -1)
-  randomSeed(randomSeed);
+    randomSeed(randomSeed);
   // try-out drawinng the flock on an graphic, with fade, no background
-  /*  flockGraphic = createGraphics(displayWidth, displayHeight);
-   flockGraphic.beginDraw();
-   flockGraphic.colorMode(HSB);
-   flockGraphic.endDraw(); */
   flock = new Flock();
   colorMode(HSB, colorRange);
 
@@ -59,8 +55,6 @@ void setup() {
     recorder = minim.createRecorder(out, "myrecording.wav", true);
     recorder.beginRecord();
   }
-  if (osc)
-    oscInit();
 }
 
 void initSounds() {
@@ -83,8 +77,6 @@ void initFlock() {
 }
 
 void initForms() {
-  for (SoundForm sf: forms)
-    sf.unPatch();
   forms.clear();
   for (int i=0; i < ss;i++)
     forms.add(new SoundForm(i, tones[i]));
@@ -93,23 +85,12 @@ void initForms() {
 void draw() {
   background(0);
   flock.run();
-  /*
-  flockGraphic.beginDraw();
-   flockGraphic.fill(255,255,255,255);
-   flockGraphic.rect(-2,-2,width+5,height+5);
-   flockGraphic.endDraw();
-   //  image(flockGraphic, 0, 0);
-   // Instructions
-   //  fill(0);
-   */
   noStroke();
   for (int i=0; i < ss;i++) {
     forms.get(i).draw();
   }
   if (selected != null)
     selected.location.set(mouseX, mouseY, 0);
-  //    mousePosToGetBoidColorTest();
-  //  println(frameCount);
   if (captureImages)
     saveFrame("pics/frame-####.bmp");
   if (autoEnd>0 && frameCount == autoEnd) {
@@ -119,8 +100,6 @@ void draw() {
     }   
     exit();
   }
-  if (osc) 
-    osc_send();
 //  println(frameRate);
 }
 
