@@ -5,7 +5,7 @@ import ddf.minim.effects.*;
 Minim       minim;
 AudioOutput out;
 
-
+int n=400;
 Flock flock;
 
 int ss;
@@ -15,23 +15,12 @@ int baseOctave = 1;
 int octaves = 5;
 int[] tones;
 
-int colorRange= 180;
+int colorRange= 36;
 int toneClr = colorRange/12;
-int strongColor= (int)(colorRange*0.9);
-
-//PGraphics flockGraphic;
-
-PImage boidImage;
-
-SoundForm selected;
-AudioRecorder recorder;
 
 void setup() {
-//  size(displayWidth, displayHeight, P2D);
-  size(800,600 , P2D);
-  if(randomSeed != -1)
-    randomSeed(randomSeed);
-  // try-out drawinng the flock on an graphic, with fade, no background
+  size(500, 500, P2D);
+
   flock = new Flock();
   colorMode(HSB, colorRange);
 
@@ -43,18 +32,7 @@ void setup() {
   // Add an initial set of boids into the system
   initFlock();
   initForms();
-  //  oscInit();
-  //  soundFormInfo_Send();
-  if (boidsMode==GRADIANTS) {
-    boidImage= loadImage("a.png");
-    blendMode(MULTIPLY);
-  }
   smooth();
-  frameRate(25);
-  if (recordSound) {
-    recorder = minim.createRecorder(out, "myrecording.wav", true);
-    recorder.beginRecord();
-  }
 }
 
 void initSounds() {
@@ -71,12 +49,14 @@ void initSounds() {
 
 void initFlock() {  
   for (int i = 0; i < n; i++) {
-    Boid b = new Boid(width/2, height/2, flock.nextID++);
+    Boid b = new Boid(width/2, height/2);
     flock.addBoid(b);
   }
 }
 
 void initForms() {
+  for (SoundForm sf: forms)
+    sf.unPatch();
   forms.clear();
   for (int i=0; i < ss;i++)
     forms.add(new SoundForm(i, tones[i]));
@@ -85,46 +65,34 @@ void initForms() {
 void draw() {
   background(0);
   flock.run();
+  fill(0);
+
   noStroke();
   for (int i=0; i < ss;i++) {
     forms.get(i).draw();
   }
-  if (selected != null)
-    selected.location.set(mouseX, mouseY, 0);
-  if (captureImages)
-    saveFrame("pics/frame-####.bmp");
-  if (autoEnd>0 && frameCount == autoEnd) {
-    if (recordSound) {
-      recorder.endRecord();
-      recorder.save();
-    }   
-    exit();
+}
+
+void keyPressed() {
+  switch(key) {
+  case 's': 
+    initForms();
+    break;
+  case 'f':
+    initFlock();
+    break;
+  case 'g': 
+    {
+      gifExport.setDelay(1);
+      gifExport.addFrame();
+      break;
+    } case 'e' : {
+      gifExport.finish();
+      break;
+    }
+    //else if (
   }
-//  println(frameRate);
 }
-
-
-
-void mousePressed() {
-  if (mouseButton==RIGHT) {
-    for (int i=0; i < ss;i++)
-      if (forms.get(i).location.dist(new PVector(mouseX, mouseY)) <forms.get(i).r ) {
-        println(hue(forms.get(i).clr)+ " "+forms.get(i).tone);
-        break;
-      }
-  } 
-  else
-    for (int i=0; i < ss;i++)
-      if (forms.get(i).location.dist(new PVector(mouseX, mouseY)) <forms.get(i).r ) {
-        selected = forms.get(i);
-        break;
-      }
-}
-
-void mouseReleased() {
-  selected = null;
-}
-
 
 // bugs
 // bezierpoints btw. boid and soundforms
