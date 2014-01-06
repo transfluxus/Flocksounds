@@ -5,9 +5,17 @@
 // Boid class
 // Methods for Separation, Cohesion, Alignment added
 
+HashMap<Integer, ArrayList<Boid>> groups = new HashMap<Integer, ArrayList<Boid>>();
+
 float lineSpeed = 10;
+PImage boidImage;
+
+float neighbordist = 50;
 
 class Boid {
+
+  final int id;
+  int groupID;
 
   PVector location;
   PVector velocity;
@@ -18,9 +26,11 @@ class Boid {
   int type;
   boolean filtering;
   color clr;
-  IIRFilter filt;
-  // is set in the align method, see render for effect
-  int nbsSz;
+  boolean[] closeToBorder= new boolean[4];
+
+  PVector sumVel=new PVector();
+  PVector sumLoc=new PVector();
+  int nbCount;
 
   // cohesion-center;
   PVector cohesionPoint;
@@ -30,14 +40,14 @@ class Boid {
   float minDist;
   float lineInvert = 0;
 
-  Boid(float x, float y) {
+  Boid(float x, float y, int id) {
+    this.id = id;
     acceleration = new PVector(0, 0);
     velocity = new PVector(random(-1, 1), random(-1, 1));
     location = new PVector(x, y);
     r = 5.0;
     maxspeed = 3+random(- flock.maxspeed_Deriv, flock.maxspeed_Deriv);
     maxforce = 0.05;
-
     type = (int) random (0, 3);
   }
 
@@ -47,20 +57,26 @@ class Boid {
     // get the closest SoundForm
     calcSss();
     borders();
-    if(renderFlock)
-    render();
+    if (renderFlock)
+      render();
     lineInvert+=lineSpeed;
-//    println(lineInvert+ " "+minDist);
+  }
+
+  void initGroup() { 
+    ArrayList<Boid> myGroup = new ArrayList<Boid>();
+    myGroup.add(this);
+    groupID = id;
+    groups.put(groupID, myGroup);
   }
 
   void applyForce(PVector force) {
-    // We could add mass here if we want A = F / M
     acceleration.add(force);
   }
 
   // We accumulate a new acceleration each time based on three rules
   void flock(ArrayList<Boid> boids) {
     PVector sep = separate(boids);   // Separation
+    getNeighbours(boids);
     PVector ali = align(boids);      // Alignment
     PVector coh = cohesion(boids);   // Cohesion
     // Arbitrarily weight these forces
@@ -82,12 +98,13 @@ class Boid {
     location.add(velocity);
     // Reset accelertion to 0 each cycle
     acceleration.mult(0);
+    checkCloseToBorder();
   }
 
   void calcSss() {
     minDist = 30000;
     float min2Dist = 30000;
-    minCircle = null;
+    SoundForm minCircle = null;
 
     for (int i=0; i < ss; i++) {
       SoundForm c = forms.get(i);
@@ -102,8 +119,13 @@ class Boid {
         scnClosest = c;
       }
     }
+    if (this.minCircle != null && this.minCircle != minCircle)
+      this.minCircle.removeBoid(this);
+    this.minCircle = minCircle;
     minCircle.addBoid(this);
   }
+
+
   // A method that calculates and applies a steering force towards a target
   // STEER = DESIRED MINUS VELOCITY
   PVector seek(PVector target) {
@@ -118,18 +140,17 @@ class Boid {
   }
 
   void render() {
-
     // Draw a triangle rotated in the direction of velocity
     float theta = velocity.heading2D() + radians(90);
+  //  float minDist =0;
     color fillColor=closeFormColors();
-
-    //  fill(fillColor);
+    //stroke(0);
     noStroke();
     pushMatrix();
     translate(location.x, location.y);
     rotate(theta);
-    if (random_BoidScaleUp && random(1) < nbsSz/(float)n) {
-      scale(2+5*(nbsSz/(float)n));
+    if (random_BoidScaleUp && random(1) < nbCount/(float)n) {
+      scale(2+5*(nbCount/(float)n));
     }
     if (boidsMode == GRADIANTS) {
       tint(hue(fillColor), strongColor, strongColor, colorRange*0.2f);
@@ -154,11 +175,19 @@ class Boid {
         break;
       }
     }
+    else if ( boidsMode == SIMPLE) {
+      stroke(colorRange);
+      //     if (closeToBorder != 0)
+      //       stroke(0, colorRange, colorRange);
+      line(0, 0, 0, 10);
+    }
     popMatrix();
     noFill();
-
+    //    line(location.x, location.y, minCircle.location.x, minCircle.location.y);
+    // cohesionPoint is calculated in cohesion.
     if (showCurves_boidToForm) {
-      if (lineInvert>minDist) {
+      println(minDist+" "+lineInvert);
+      if (lineInvert>minDist) { // line blink effect
         stroke((int)(colorRange*0.5+ hue(minCircle.clr))%colorRange, strongColor, strongColor);
         lineInvert =0;
       } 
@@ -182,6 +211,7 @@ class Boid {
       return color((hue(minCircle.clr)-((hue(scnClosest.clr)-hue(minCircle.clr))*min_Scn_rel)+colorRange)%colorRange, strongColor, strongColor);
   }
 
+
   // Wraparound
   void borders() {
     if (location.x < -r) location.x = width+r;
@@ -200,7 +230,9 @@ class Boid {
     for (Boid other : boids) {
       float d = PVector.dist(location, other.location);
       // If the distance is greater than 0 and less than an arbitrary amount (0 when you are yourself)
-      if ((d > 0) && (d < desiredseparation)) {
+      boolean close = (d > 0) && (d < desiredseparation);
+      boolean borderAcrossBorder = closeAcrossBorder(other, desiredseparation);
+      if (close || borderAcrossBorder) {
         // Calculate vector pointing away from neighbor
         PVector diff = PVector.sub(location, other.location);
         diff.normalize();
@@ -225,55 +257,99 @@ class Boid {
     return steer;
   }
 
+  boolean closeAcrossBorder(Boid other, float maxDist) {
+    boolean borderAcrossBorder = borderMatch(other);
+    if (borderAcrossBorder) 
+      borderAcrossBorder= location.dist(shiftToMe(other)) < maxDist;
+    return borderAcrossBorder;
+  }
+
+  void getNeighbours(ArrayList<Boid> boids) {
+    sumVel.mult(0);    
+    sumLoc.mult(0);
+    nbCount = 0;
+    for (Boid other : boids) {
+      float d = PVector.dist(location, other.location);
+      boolean close = (d > 0) && (d < neighbordist);
+      boolean borderAcrossBorder = closeAcrossBorder(other, neighbordist);
+      if (close || borderAcrossBorder) {
+        sumVel.add(other.velocity);
+        sumLoc.add(other.location);
+        nbCount++;
+        if (other.groupID < groupID) 
+          integrateGroupInto(groupID, other.groupID);
+      }
+    }
+    //    print(sum + " "+nbCount);
+  }
+
   // Alignment
   // For every nearby boid in the system, calculate the average velocity
   PVector align (ArrayList<Boid> boids) {
-    float neighbordist = 50;
-    PVector sum = new PVector(0, 0);
-    int count = 0;
-    for (Boid other : boids) {
-      float d = PVector.dist(location, other.location);
-      if ((d > 0) && (d < neighbordist)) {
-        sum.add(other.velocity);
-        count++;
-      }
-    }
-    if (count > 0) {
-      sum.div((float)count);
-      sum.normalize();
-      sum.mult(maxspeed);
-      PVector steer = PVector.sub(sum, velocity);
-      steer.limit(maxforce);
-      nbsSz = count;
-      return steer;
+    PVector dir = new PVector(sumVel.x, sumVel.y);
+    if (nbCount > 0) {
+      dir.div((float)nbCount);
+      dir.setMag(maxspeed);
+      dir.sub(velocity);
+      dir.limit(maxforce);
+      return dir;
     } 
-    else {
+    else 
       return new PVector(0, 0);
-    }
   }
 
   // Cohesion
   // For the average location (i.e. center) of all nearby boids, calculate steering vector towards that location
   PVector cohesion (ArrayList<Boid> boids) {
-    float neighbordist = 50;
-    PVector sum = new PVector(0, 0);   // Start with empty vector to accumulate all locations
-    int count = 0;
-    for (Boid other : boids) {
-      float d = PVector.dist(location, other.location);
-      if ((d > 0) && (d < neighbordist)) {
-        sum.add(other.location); // Add location
-        count++;
-      }
+    PVector center = new PVector(sumLoc.x, sumLoc.y); // Start with empty vector to accumulate all locations
+    if (nbCount > 0) {
+      center.div((float) nbCount);
+      cohesionPoint = center;
+      return seek(center); // Steer towards the location
     }
-    if (count > 0) {
-      sum.div(count);
-      cohesionPoint = sum;
-      return seek(sum);  // Steer towards the location
-    } 
     else {
       cohesionPoint = location;
       return new PVector(0, 0);
     }
   }
+
+  void checkCloseToBorder() {
+    java.util.Arrays.fill(closeToBorder, false);
+    if (location.x <  neighbordist)
+      closeToBorder[0] = true;
+    else if (location.x > width-neighbordist)
+      closeToBorder[2] = true;
+    if (   location.y <  neighbordist)
+      closeToBorder[1] = true;
+    else if (location.y > height-neighbordist)
+      closeToBorder[3] = true;
+  }
+
+
+  boolean borderMatch(Boid other) {
+    for (int i=0; i < 4;i++)
+      if (closeToBorder[i] & other.closeToBorder[(i+2)%4])
+        return true;
+    return false;
+  }
+
+  PVector shiftToMe(Boid other) {
+    PVector loc = new PVector(other.location.x, other.location.y);
+    if (closeToBorder[0])
+      loc.sub(width, 0, 0);
+    else if (closeToBorder[1])
+      loc.sub(0, height, 0);
+    if (closeToBorder[2])
+      loc.add(width, 0, 0);
+    else if (closeToBorder[3])
+      loc.add(0, height, 0);
+    return loc;
+  }
+}
+
+void integrateGroupInto(int from, int into) {
+  for (Boid b : groups.get(from))
+    b.groupID= groups.get(into).get(0).groupID;
+  groups.get(into).addAll(groups.remove(from));
 }
 

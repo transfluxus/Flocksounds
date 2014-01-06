@@ -32,3 +32,29 @@ UGen noiseFilter(SoundForm sf) {
   return sf.wave.patch(filt);
 }
 
+/*
+SoundForm selected;
+ 
+ void mousePressed() {
+ for (int i=0; i < ss;i++)
+ if (forms.get(i).location.dist(new PVector(mouseX, mouseY)) <forms.get(i).r ) {
+ selected = forms.get(i);
+ break;
+ }
+ }
+ 
+ 
+ void mouseReleased() {
+ selected = null;
+ }
+ 
+ void keyPressed() {
+ //  forms.get((int)random(forms.size())).unPatch();
+ }
+ 
+ // into draw
+ //  if(selected != null)
+ //  selected.location.set(mouseX,mouseY,0);
+ 
+ 
+ */
