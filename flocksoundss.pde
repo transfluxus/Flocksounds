@@ -5,7 +5,6 @@ import ddf.minim.effects.*;
 Minim       minim;
 AudioOutput out;
 
-int n=400;
 Flock flock;
 
 int ss;
@@ -17,22 +16,41 @@ int[] tones;
 
 int colorRange= 36;
 int toneClr = colorRange/12;
+int strongColor= (int)(colorRange*0.9);
+
+AudioRecorder recorder;
+SoundForm selected;
 
 void setup() {
-  size(500, 500, P2D);
+  size(displayWidth, displayHeight, P2D);
+  smooth();
+  frameRate(25);
+  ellipseMode(RADIUS);
+  rectMode(CENTER);
+  imageMode(CENTER);
+  //  size(800,600 , P2D);
+  if (randomSeed != -1)
+    randomSeed(randomSeed);
 
   flock = new Flock();
   colorMode(HSB, colorRange);
 
   minim = new Minim(this);
   out = minim.getLineOut();
-  ellipseMode(RADIUS);
-  rectMode(CENTER);
+
   initSounds();
   // Add an initial set of boids into the system
   initFlock();
   initForms();
-  smooth();
+  if (boidsMode==GRADIANTS) {
+    boidImage= loadImage("a.png");
+    blendMode(MULTIPLY);
+  }
+
+  if (recordSound) {
+    recorder = minim.createRecorder(out, "myrecording.wav", true);
+    recorder.beginRecord();
+  }
 }
 
 void initSounds() {
@@ -49,7 +67,7 @@ void initSounds() {
 
 void initFlock() {  
   for (int i = 0; i < n; i++) {
-    Boid b = new Boid(width/2, height/2);
+    Boid b = new Boid(width/2, height/2,flock.nextID++);
     flock.addBoid(b);
   }
 }
@@ -66,10 +84,20 @@ void draw() {
   background(0);
   flock.run();
   fill(0);
-
   noStroke();
-  for (int i=0; i < ss;i++) {
+  for (int i=0; i < ss;i++) 
     forms.get(i).draw();
+
+  if (selected != null)
+    selected.location.set(mouseX, mouseY, 0);
+  if (captureImages)
+    saveFrame("pics/frame-####.bmp");
+  if (autoEnd>0 && frameCount == autoEnd) {
+    if (recordSound) {
+      recorder.endRecord();
+      recorder.save();
+    }   
+    exit();
   }
 }
 
@@ -81,17 +109,21 @@ void keyPressed() {
   case 'f':
     initFlock();
     break;
-  case 'g': 
-    {
-      gifExport.setDelay(1);
-      gifExport.addFrame();
-      break;
-    } case 'e' : {
-      gifExport.finish();
-      break;
-    }
+
     //else if (
   }
+}
+
+void mousePressed() {
+    for (int i=0; i < ss;i++)
+      if (forms.get(i).location.dist(new PVector(mouseX, mouseY)) <forms.get(i).r ) {
+        selected = forms.get(i);
+        break;
+      }
+}
+
+void mouseReleased() {
+  selected = null;
 }
 
 // bugs
